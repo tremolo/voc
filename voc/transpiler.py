@@ -1,13 +1,9 @@
 import ast
-import importlib
-import marshal
 import os
-import py_compile
 import sys
 
-from .python.modules import Module
 from .python.ast import Visitor
-from .python.utils import dump
+from .python.debug import dump
 
 
 def transpile(input, prefix='.', outdir=None, namespace='python', verbosity=0):
@@ -18,7 +14,7 @@ def transpile(input, prefix='.', outdir=None, namespace='python', verbosity=0):
             if verbosity:
                 print("Compiling %s ..." % file_or_dir)
 
-            with open(file_or_dir) as source:
+            with open(file_or_dir, encoding='utf-8') as source:
                 ast_module = ast.parse(source.read(), mode='exec')
                 transpiler.transpile(file_or_dir, ast_module, prefix)
         elif os.path.isdir(file_or_dir):
@@ -28,7 +24,7 @@ def transpile(input, prefix='.', outdir=None, namespace='python', verbosity=0):
                         source_file = os.path.join(root, filename)
                         if verbosity:
                             print("Compiling %s ..." % source_file)
-                        with open(source_file) as source:
+                        with open(source_file, encoding='utf-8') as source:
                             ast_module = ast.parse(source.read(), mode='exec')
                             transpiler.transpile(source_file, ast_module, prefix)
         else:
@@ -74,7 +70,7 @@ class Transpiler:
             os.path.abspath(filename)
         ])
 
-        self.transpile_code(os.path.abspath(filename)[len(common):], ast_module)
+        self.transpile_code(os.path.abspath(filename)[len(common) + 1:], ast_module)
 
     def transpile_string(self, filename, code_string):
         "Transpile a string containing Python code into class files"
@@ -85,11 +81,9 @@ class Transpiler:
         "Transpile a code object into class files"
         # Convert the AST into Java opcodes
         if self.verbosity > 1:
-            print ('=' * 75)
-            print(filename.strip('/'))
-            print ('=' * 75)
+            print('=' * 75)
             print(dump(ast_module))
-            print ('-' * 75)
+            print('=' * 75)
 
         module = Visitor(self.namespace, filename, verbosity=self.verbosity).visit(ast_module)
 
